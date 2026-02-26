@@ -13,6 +13,9 @@ import requests
 import pandas as pd
 from dotenv import load_dotenv
 
+from integrations.google_sheets import push_to_sheets
+from integrations.notion_db import push_to_notion
+
 sys.stdout.reconfigure(encoding="utf-8")
 load_dotenv()
 
@@ -290,6 +293,24 @@ def main():
     if DOWNLOAD_ATTACHMENTS and rows:
         print("  첨부파일 다운로드 시작...")
         download_attachments(rows, yesterday)
+
+    # Google Sheets 연동
+    sheet_id = os.getenv("GOOGLE_SHEET_ID", "")
+    if sheet_id:
+        print("  Google Sheets 연동...")
+        try:
+            push_to_sheets(rows, sheet_id, yesterday)
+        except Exception as e:
+            print(f"  [ERROR] Google Sheets: {e}")
+
+    # Notion 연동
+    notion_db_id = os.getenv("NOTION_DATABASE_ID", "")
+    if notion_db_id:
+        print("  Notion 연동...")
+        try:
+            push_to_notion(rows, notion_db_id, yesterday)
+        except Exception as e:
+            print(f"  [ERROR] Notion: {e}")
 
     print("=== 완료 ===")
 
