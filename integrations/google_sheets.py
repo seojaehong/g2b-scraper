@@ -20,6 +20,7 @@ HEADERS = [
     "수집일", "공고번호", "차수", "공고명", "공고기관", "수요기관",
     "공고일시", "마감일시", "배정예산", "추정가격", "계약방법", "낙찰방법",
     "용역구분", "담당자", "담당자전화", "상세링크",
+    "매칭키워드",
     "첨부1", "첨부2", "첨부3", "첨부4", "첨부5",
 ]
 
@@ -99,9 +100,55 @@ def push_to_sheets(rows: list[dict], spreadsheet_id: str, date_str: str):
             row.get("담당자명", ""),
             row.get("담당자전화", ""),
             row.get("상세URL", "") or row.get("공고URL", ""),
+            ", ".join(row.get("매칭키워드", [])),
         ] + att_links
 
         worksheet.append_row(sheet_row, value_input_option="USER_ENTERED")
         added += 1
 
     print(f"  Google Sheets: {added}건 추가 완료")
+
+    # 키워드별 현황 시트 업데이트
+    update_keyword_summary(client, spreadsheet_id, rows, date_str)
+
+
+def update_keyword_summary(client: gspread.Client, spreadsheet_id: str, rows: list[dict], date_str: str):
+    """키워드별 일별 매칭 건수 현황 시트 업데이트."""
+    from collections import Counter
+
+    KEYWORDS = [
+        "성희롱", "성폭력", "여성폭력", "여성", "여성노동", "성평등",
+        "고용평등", "직장 내 괴롭힘", "괴롭힘", "조직문화", "조직문화 진단",
+    ]
+    SUMMARY_HEADERS = ["날짜"] + KEYWORDS + ["합계"]
+
+    spreadsheet = client.open_by_key(spreadsheet_id)
+    try:
+        ws = spreadsheet.worksheet("키워드별 현황")
+    except gspread.exceptions.WorksheetNotFound:
+        ws = spreadsheet.add_worksheet(title="키워드별 현황", rows=500, cols=len(SUMMARY_HEADERS))
+        ws.append_row(SUMMARY_HEADERS)
+        ws.freeze(rows=1)
+        ws.format("A1:M1", {
+            "textFormat": {"bold": True},
+            "backgroundColor": {"red": 0.85, "green": 0.92, "blue": 1.0},
+            "horizontalAlignment": "CENTER",
+        })
+
+    # 키워드별 카운트
+    kw_count = Counter()
+    for row in rows:
+        for kw in row.get("매칭키워드", []):
+            kw_count[kw] += 1
+
+    date_display = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
+    summary_row = [date_display]
+    total = 0
+    for kw in KEYWORDS:
+        cnt = kw_count.get(kw, 0)
+        summary_row.append(cnt)
+        total += cnt
+    summary_row.append(len(rows))  # 합계는 실제 공고 수 (중복 키워드 제외)
+
+    ws.append_row(summary_row)
+    print(f"  키워드별 현황: {date_display} 추가 완료")

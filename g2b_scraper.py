@@ -120,11 +120,13 @@ def fetch_all(begin: str, end: str) -> list[dict]:
 
 
 def filter_by_keywords(items: list[dict]) -> list[dict]:
-    """공고명에 키워드가 포함된 건만 필터링."""
+    """공고명에 키워드가 포함된 건만 필터링. 매칭 키워드도 기록."""
     matched = []
     for item in items:
         name = item.get("bidNtceNm", "")
-        if any(kw in name for kw in KEYWORDS):
+        hit_keywords = [kw for kw in KEYWORDS if kw in name]
+        if hit_keywords:
+            item["_matched_keywords"] = hit_keywords
             matched.append(item)
     print(f"  키워드 매칭: {len(matched)}건")
     return matched
@@ -160,6 +162,8 @@ def extract_fields(items: list[dict]) -> list[dict]:
             row["금액"] = str(budget) if budget else "미공개"
         # 첨부파일
         row["첨부파일"] = extract_attachments(item)
+        # 매칭 키워드
+        row["매칭키워드"] = item.get("_matched_keywords", [])
         rows.append(row)
     return rows
 
