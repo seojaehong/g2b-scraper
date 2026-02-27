@@ -1,3 +1,5 @@
 requests
 python-dotenv
 pandas
+gspread
+google-auth
