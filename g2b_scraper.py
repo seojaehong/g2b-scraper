@@ -22,7 +22,7 @@ load_dotenv()
 # ── 설정 ──────────────────────────────────────────────
 API_KEY = os.getenv("G2B_API_KEY")
 BASE_URL = "http://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServcPPSSrch"
-KEYWORDS = ["성희롱", "성폭력", "여성폭력", "여성", "여성노동", "성평등", "조직문화 진단", "조직문화"]
+KEYWORDS = ["성희롱", "성폭력", "여성폭력", "여성", "여성노동", "성평등", "고용평등", "직장 내 괴롭힘", "괴롭힘", "조직문화", "조직문화 진단"]
 NUM_OF_ROWS = 100
 OUTPUT_DIR = Path(__file__).parent / "output" / "g2b"
 DOWNLOAD_ATTACHMENTS = True  # 첨부파일 다운로드 여부
