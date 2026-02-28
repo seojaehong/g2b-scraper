@@ -79,6 +79,15 @@ def push_to_sheets(rows: list[dict], spreadsheet_id: str, date_str: str):
     worksheet = ensure_sheet(client, spreadsheet_id)
 
     added = 0
+
+    # 0건일 때 "신규공고 없음" 행 추가
+    if not rows:
+        empty_row = [date_str, "신규공고 없음"] + [""] * (len(HEADERS) - 2)
+        worksheet.append_row(empty_row, value_input_option="USER_ENTERED")
+        print(f"  Google Sheets: 신규공고 없음 ({date_str})")
+        update_keyword_summary(client, spreadsheet_id, rows, date_str)
+        return
+
     for row in rows:
         attachments = row.get("첨부파일", [])
         att_links = format_attachment_links(attachments)
