@@ -5,7 +5,7 @@ API: getBidPblancListInfoServcPPSSrch (나라장터검색조건에 의한 입찰
 """
 import sys
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -51,7 +51,8 @@ FIELDS = {
 
 def get_search_period(days_ago: int = 1) -> tuple[str, str]:
     """D-N 하루를 검색 기간으로 반환 (yyyyMMddHHmm 형식)."""
-    target = datetime.now() - timedelta(days=days_ago)
+    KST = timezone(timedelta(hours=9))
+    target = datetime.now(KST) - timedelta(days=days_ago)
     begin = target.strftime("%Y%m%d") + "0000"
     end = target.strftime("%Y%m%d") + "2359"
     return begin, end
@@ -273,8 +274,9 @@ def main():
         print("  공공데이터포털(data.go.kr)에서 Decoding 키를 복사하세요.")
         sys.exit(1)
 
+    KST = timezone(timedelta(hours=9))
     begin, end = get_search_period(days_ago=1)
-    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
+    yesterday = (datetime.now(KST) - timedelta(days=1)).strftime("%Y%m%d")
     print(f"=== G2B 용역 입찰공고 수집 ({yesterday}) ===")
     print(f"  검색기간: {begin} ~ {end}")
 
