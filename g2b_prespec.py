@@ -158,9 +158,12 @@ def extract_fields(items: list[dict]) -> list[dict]:
         row["첨부파일"] = extract_spec_docs(item)
         # 매칭 키워드
         row["매칭키워드"] = item.get("_matched_keywords", [])
-        # 나라장터 상세 URL
+        # 상세 URL: 규격서 파일이 있으면 직접 다운로드 링크, 없으면 나라장터 검색
         reg_no = row.get("사전규격등록번호", "")
-        if reg_no:
+        attachments = row["첨부파일"]
+        if attachments:
+            row["상세URL"] = attachments[0]["url"]
+        elif reg_no:
             row["상세URL"] = f"https://www.g2b.go.kr/link/PRCA001_04/single/?srch=0002&befSpecRgstNo={reg_no}"
         else:
             row["상세URL"] = ""
