@@ -161,3 +161,78 @@ def update_keyword_summary(client: gspread.Client, spreadsheet_id: str, rows: li
 
     ws.append_row(summary_row)
     print(f"  키워드별 현황: {date_display} 추가 완료")
+
+
+# ── 사전규격 시트 ──────────────────────────────────────
+
+PRESPEC_HEADERS = [
+    "수집일", "등록번호", "사업명", "수요기관", "공고기관",
+    "등록일시", "의견마감일", "배정예산", "금액",
+    "담당자", "담당자전화", "상세링크",
+    "매칭키워드",
+    "규격서1", "규격서2", "규격서3",
+]
+
+
+def push_prespec_to_sheets(rows: list[dict], spreadsheet_id: str, date_str: str):
+    """사전규격 수집 결과를 Google Sheets '사전규격' 시트에 누적 추가."""
+    if not spreadsheet_id:
+        print("  [SKIP] GOOGLE_SHEET_ID 미설정")
+        return
+
+    client = get_client()
+
+    # '사전규격' 시트 확보
+    spreadsheet = client.open_by_key(spreadsheet_id)
+    sheet_name = "사전규격"
+    try:
+        worksheet = spreadsheet.worksheet(sheet_name)
+    except gspread.exceptions.WorksheetNotFound:
+        worksheet = spreadsheet.add_worksheet(
+            title=sheet_name, rows=1000, cols=len(PRESPEC_HEADERS)
+        )
+        worksheet.append_row(PRESPEC_HEADERS)
+        worksheet.freeze(rows=1)
+        worksheet.format(f"A1:{chr(64 + len(PRESPEC_HEADERS))}1", {
+            "textFormat": {"bold": True},
+            "backgroundColor": {"red": 0.95, "green": 0.88, "blue": 0.75},
+            "horizontalAlignment": "CENTER",
+        })
+
+    if not worksheet.row_values(1):
+        worksheet.append_row(PRESPEC_HEADERS)
+
+    added = 0
+
+    if not rows:
+        empty_row = [date_str, "신규 사전규격 없음"] + [""] * (len(PRESPEC_HEADERS) - 2)
+        worksheet.append_row(empty_row, value_input_option="USER_ENTERED")
+        print(f"  Google Sheets (사전규격): 매칭 없음 ({date_str})")
+        return
+
+    for row in rows:
+        attachments = row.get("첨부파일", [])
+        att_links = format_attachment_links(attachments, max_count=3)
+
+        name = row.get("사전규격명", "") or row.get("품명(사업명)", "")
+
+        sheet_row = [
+            date_str,
+            row.get("사전규격등록번호", ""),
+            name,
+            row.get("수요기관명", ""),
+            row.get("공고기관명", ""),
+            row.get("등록일시", ""),
+            row.get("의견등록마감일", ""),
+            row.get("배정예산액", ""),
+            row.get("금액", ""),
+            row.get("담당자명", ""),
+            row.get("담당자전화", ""),
+            row.get("상세URL", ""),
+            ", ".join(row.get("매칭키워드", [])),
+        ] + att_links
+
+        worksheet.append_row(sheet_row, value_input_option="USER_ENTERED")
+        added += 1
+
+    print(f"  Google Sheets (사전규격): {added}건 추가 완료")
